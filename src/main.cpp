@@ -24,15 +24,16 @@ PubSubClient MQTTclient(wifiClient);
 
 // function called when a MQTT message arrived
 void callback(char* p_topic, byte* p_payload, unsigned int p_length) {
+
 }
 
 int getVoltagePercent(float voltage){
-  // from 2.5v to 3.4v
+  // from 2.5v to 3.3v
   float v = voltage - 2.5;
   if ( v < 0 ){
     v = 0;
-  }
-  return ( (v / 0.9 * 100) );
+  int voltagePercent = v / 0.8 * 100;
+  return voltagePercent;
 }
 
 void SendMQTTData(float temp, float pressure, float voltage){
@@ -50,10 +51,10 @@ void SendMQTTData(float temp, float pressure, float voltage){
 
 void setup() {
   WiFi.mode(WIFI_STA);
-  WiFi.begin(myWifiSSID, myWifiPASS);
+  WiFi.begin(myWifiSSID2, myWifiPASS2);
 
   while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    WiFi.begin(myWifiSSID, myWifiPASS);
+    delay(500);
     //WiFi failed, retrying.
   }
   //WiFi connected
@@ -65,7 +66,7 @@ void setup() {
   
   pinMode(POWER_PIN, OUTPUT);
   digitalWrite(POWER_PIN, HIGH);
-  delay(500);
+  delay(1000);
 
   //I2C stuff
     Wire.begin(0, 2);
@@ -81,10 +82,11 @@ void loop() {
     pressure = BMP_Sensor.readPressure();
   }
 
+  digitalWrite(POWER_PIN, LOW);
   SendMQTTData(temp, pressure, voltage);
 
-  digitalWrite(POWER_PIN, LOW);
   MQTTclient.disconnect();
+  WiFi.disconnect();
 
   ESP.deepSleep(SLEEPING_TIME_IN_SECONDS * 1500000, WAKE_RF_DEFAULT);
   delay(500); // wait for deep sleep to happen
